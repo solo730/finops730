@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FinOps Study App</title>
+<style>
+:root {
+  --teal:#00897B;--teal-dark:#00695C;--teal-mid:#00897B;--teal-light:#E0F2F1;
+  --gold:#FFD600;--dark:#0D1117;--card:#161B27;--card2:#1E2536;
+  --border:rgba(255,255,255,0.08);--text:#E8EDF5;--muted:rgba(232,237,245,0.5);
+  --correct:#00E676;--wrong:#FF5252;--white:#fff;--r:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;display:flex;flex-direction:column;overflow-x:hidden;}
+
+/* HEADER */
+.hdr{padding:18px 20px 14px;background:linear-gradient(160deg,#00695C 0%,#0D1117 100%);position:relative;overflow:hidden;}
+.hdr::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,191,165,0.25) 0%,transparent 70%);border-radius:50%;}
+.hdr-inner{position:relative;z-index:1;}
+.hdr-top{display:flex;align-items:center;gap:10px;}
+.hdr-icon{width:38px;height:38px;background:var(--teal);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 16px rgba(0,137,123,0.4);}
+.hdr h1{font-size:1.2rem;font-weight:800;letter-spacing:-0.3px;}
+.hdr p{font-size:0.7rem;color:rgba(255,255,255,0.55);margin-top:2px;}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(13,17,23,0.97);border-top:1px solid var(--border);display:flex;backdrop-filter:blur(20px);z-index:200;padding-bottom:env(safe-area-inset-bottom);}
+.bnav-btn{flex:1;padding:12px 8px 10px;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all 0.2s;color:rgba(255,255,255,0.35);font-size:0.62rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.bnav-btn .ico{font-size:1.25rem;transition:transform 0.2s;}
+.bnav-btn.active{color:var(--teal);}
+.bnav-btn.active .ico{transform:scale(1.15);}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;padding:16px 16px 100px;gap:14px;}
+.screen.active{display:flex;}
+
+/* HOME */
+.welcome-banner{background:linear-gradient(135deg,rgba(0,191,165,0.15),rgba(0,105,92,0.1));border:1px solid rgba(0,191,165,0.25);border-radius:var(--r);padding:20px;}
+.welcome-banner h2{font-size:1.05rem;font-weight:700;margin-bottom:8px;}
+.welcome-banner p{font-size:0.85rem;line-height:1.65;color:var(--muted);}
+.stats-row{display:flex;gap:10px;}
+.stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 10px;text-align:center;}
+.stat-n{font-size:2rem;font-weight:800;color:var(--teal);line-height:1;}
+.stat-l{font-size:0.67rem;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.info-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.info-card .tag{display:inline-block;background:rgba(0,191,165,0.15);color:var(--teal);font-size:0.67rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:99px;margin-bottom:10px;}
+.info-card h3{font-size:0.95rem;font-weight:700;margin-bottom:8px;}
+.info-card p{font-size:0.83rem;line-height:1.65;color:var(--muted);}
+.info-card p strong{color:var(--text);}
+.start-btn{width:100%;padding:16px;background:var(--teal-mid);border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 6px 20px rgba(0,137,123,0.4);letter-spacing:0.3px;}
+.start-btn:active{transform:scale(0.98);}
+.credit-home{font-size:0.68rem;color:var(--muted);text-align:center;line-height:1.7;}
+
+/* FILTERS */
+.filter-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.filter-row::-webkit-scrollbar{display:none;}
+.chip{white-space:nowrap;padding:7px 14px;border-radius:99px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.chip.on{border-color:var(--teal);background:rgba(0,137,123,0.12);color:var(--teal);}
+
+/* PROGRESS */
+.prog-wrap{display:flex;align-items:center;gap:10px;}
+.prog-bg{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:99px;transition:width 0.4s;}
+.prog-txt{font-size:0.75rem;color:var(--muted);font-weight:600;white-space:nowrap;}
+
+/* FLASHCARD */
+.fc-scene{perspective:1400px;height:280px;cursor:pointer;user-select:none;}
+.fc-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.55s cubic-bezier(0.4,0,0.2,1);border-radius:var(--r);}
+.fc-inner.flipped{transform:rotateY(180deg);}
+.fc-side{position:absolute;inset:0;border-radius:var(--r);backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 22px;text-align:center;}
+.fc-front{background:linear-gradient(145deg,#006450,#00897B,#00BFA5);box-shadow:0 12px 40px rgba(0,137,123,0.5);}
+.fc-back{background:var(--card2);border:2px solid rgba(0,191,165,0.3);transform:rotateY(180deg);box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.fc-badge{font-size:0.67rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.65;margin-bottom:14px;}
+.fc-section-tag{background:rgba(255,255,255,0.15);border-radius:99px;padding:4px 12px;font-size:0.7rem;font-weight:600;margin-bottom:16px;}
+.fc-q{font-size:1.05rem;font-weight:700;line-height:1.5;}
+.fc-a{font-size:0.88rem;line-height:1.65;color:rgba(255,255,255,0.9);white-space:pre-line;}
+.fc-hint{font-size:0.67rem;opacity:0.45;margin-top:18px;}
+.fc-nav{display:flex;gap:10px;}
+.fc-btn{flex:1;padding:15px;border:none;border-radius:14px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.18s;}
+.fc-btn:active{transform:scale(0.97);}
+.fc-prev{background:var(--card2);color:var(--muted);border:1px solid var(--border);}
+.fc-next{background:var(--teal-mid);color:#fff;box-shadow:0 6px 20px rgba(0,137,123,0.4);}
+.fc-shuffle{width:100%;padding:13px;background:rgba(255,214,0,0.1);border:1.5px solid rgba(255,214,0,0.25);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.fc-shuffle:active{transform:scale(0.98);}
+
+/* QUIZ */
+.quiz-top{display:flex;align-items:center;justify-content:space-between;}
+.quiz-counter{font-size:0.85rem;font-weight:700;color:var(--teal);}
+.quiz-score-badge{background:rgba(0,191,165,0.12);border:1px solid rgba(0,191,165,0.25);border-radius:99px;padding:4px 12px;font-size:0.75rem;font-weight:700;color:var(--teal);}
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 18px;}
+.q-section{font-size:0.67rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.q-text{font-size:1rem;font-weight:700;line-height:1.55;}
+.options{display:flex;flex-direction:column;gap:10px;}
+.opt{padding:15px 16px;border-radius:14px;border:1.5px solid var(--border);background:var(--card2);font-size:0.88rem;line-height:1.5;cursor:pointer;transition:all 0.18s;text-align:left;color:var(--text);display:flex;align-items:flex-start;gap:10px;}
+.opt-letter{width:24px;height:24px;min-width:24px;border-radius:8px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:var(--muted);transition:all 0.18s;margin-top:1px;}
+.opt:active{transform:scale(0.99);}
+.opt.correct{border-color:var(--correct);background:rgba(0,230,118,0.1);}
+.opt.correct .opt-letter{background:var(--correct);color:#000;}
+.opt.wrong{border-color:var(--wrong);background:rgba(255,82,82,0.1);}
+.opt.wrong .opt-letter{background:var(--wrong);color:#fff;}
+.opt.reveal-correct{border-color:var(--correct);background:rgba(0,230,118,0.07);}
+.opt.reveal-correct .opt-letter{background:var(--correct);color:#000;}
+.opt.disabled{cursor:default;pointer-events:none;}
+.explain{background:rgba(0,191,165,0.08);border-left:4px solid var(--teal);border-radius:0 12px 12px 0;padding:14px 16px;font-size:0.85rem;line-height:1.65;color:rgba(255,255,255,0.85);display:none;}
+.explain.show{display:block;}
+.explain strong{color:var(--teal);}
+.q-next-btn{width:100%;padding:16px;background:var(--teal-mid);border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 6px 20px rgba(0,137,123,0.4);display:none;}
+.q-next-btn.show{display:block;}
+.q-next-btn:active{transform:scale(0.98);}
+
+/* SCORE */
+.score-screen{background:var(--card);border:2px solid rgba(0,191,165,0.3);border-radius:var(--r);padding:36px 24px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.score-emoji{font-size:3.5rem;margin-bottom:16px;display:block;}
+.score-pct{font-size:4.5rem;font-weight:800;color:var(--gold);line-height:1;}
+.score-fraction{font-size:0.85rem;color:var(--muted);margin-top:6px;}
+.score-msg{font-size:1.1rem;font-weight:700;margin:20px 0 8px;line-height:1.45;}
+.score-sub{font-size:0.83rem;color:var(--muted);line-height:1.6;}
+.score-btns{display:flex;flex-direction:column;gap:10px;margin-top:24px;}
+.score-retry{padding:15px;border:none;border-radius:14px;background:var(--teal-mid);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,137,123,0.4);}
+.score-study{padding:15px;border:1.5px solid var(--border);border-radius:14px;background:transparent;color:var(--muted);font-size:0.9rem;font-weight:600;cursor:pointer;}
+
+/* GLOSSARY */
+.search-wrap{position:relative;}
+.search-input{width:100%;padding:14px 16px 14px 44px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-size:0.95rem;outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:var(--teal);}
+.search-input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;}
+.gloss-letter-group{display:flex;flex-direction:column;gap:8px;}
+.gloss-letter{font-size:0.75rem;font-weight:800;color:var(--teal);letter-spacing:2px;text-transform:uppercase;padding:4px 0;border-bottom:1px solid rgba(0,191,165,0.2);margin-bottom:2px;}
+.gloss-term{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;}
+.gloss-term:active{transform:scale(0.99);}
+.gloss-term.open{border-color:rgba(0,191,165,0.35);}
+.gloss-name{font-size:0.92rem;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center;}
+.gloss-name .arr{font-size:0.8rem;color:var(--muted);transition:transform 0.2s;}
+.gloss-term.open .arr{transform:rotate(180deg);}
+.gloss-def{font-size:0.83rem;line-height:1.65;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;}
+.gloss-term.open .gloss-def{display:block;}
+.gloss-tag{display:inline-block;background:rgba(0,191,165,0.12);color:var(--teal);font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-top:8px;letter-spacing:0.5px;}
+.no-results{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.9rem;}
+.gloss-count{font-size:0.75rem;color:var(--muted);text-align:center;}
+
+.hidden{display:none!important;}
+
+/* DISCLAIMER */
+.disclaimer{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:16px;margin-top:4px;}
+.disclaimer-title{font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.disclaimer p{font-size:0.75rem;line-height:1.7;color:var(--muted);margin-bottom:8px;}
+.disclaimer p:last-child{margin-bottom:0;}
+.disclaimer a{color:var(--teal);text-decoration:none;}
+.disclaimer strong{color:rgba(232,237,245,0.7);}
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <div class="hdr-icon">⚡</div>
+      <div>
+        <h1>FinOps Study App</h1>
+        <p>FinOps Foundation Exam Prep · finops.org (CC BY 4.0) · FinOps730 LLC</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div class="welcome-banner">
+    <h2>👋 Welcome to FinOps Study</h2>
+    <p>New to cloud? No problem. Use <strong>Flashcards</strong> to learn, <strong>Quiz</strong> to test yourself, and <strong>Glossary</strong> to look up any term instantly.</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n">70</div><div class="stat-l">Flashcards</div></div>
+    <div class="stat"><div class="stat-n">35</div><div class="stat-l">Quiz Q's</div></div>
+    <div class="stat"><div class="stat-n" id="home-best">—</div><div class="stat-l">Best Score</div></div>
+  </div>
+  <div class="info-card">
+    <div class="tag">The Definition</div>
+    <h3>What is FinOps?</h3>
+    <p>FinOps is an <strong>operational framework and cultural practice</strong> that maximizes the business value of technology, enables timely data-driven decision making, and creates <strong>financial accountability</strong> through collaboration between <strong>engineering, finance, and business teams</strong>.</p>
+  </div>
+  <div class="info-card">
+    <div class="tag">How to Use</div>
+    <h3>Study Strategy</h3>
+    <p><strong>Step 1:</strong> Go through all Flashcards. Tap to flip.<br><br><strong>Step 2:</strong> Use Glossary to look up unfamiliar terms.<br><br><strong>Step 3:</strong> Take the Quiz. Aim for 75%+ (that's passing score).</p>
+  </div>
+  <button class="start-btn" onclick="showScreen('s-flash');updateFlashCard()">📚 Start Flashcards →</button>
+  <div class="disclaimer">
+    <div class="disclaimer-title">⚠️ Disclaimer</div>
+    <p><strong>Not Official Exam Material.</strong> This app is an independent study tool created for educational purposes only. It is not sponsored, endorsed, approved, or affiliated with the FinOps Foundation or The Linux Foundation. Passing this app's quiz does not guarantee passing the official FinOps Certified Practitioner (FOCP) exam.</p>
+    <p><strong>No Liability.</strong> FinOps730 LLC makes no warranties, express or implied, regarding the accuracy, completeness, or fitness of this content for any particular purpose. FinOps730 LLC is not responsible for any exam outcomes, decisions, or actions taken based on information provided in this app.</p>
+    <p><strong>Content Attribution.</strong> Study content is sourced from the official FinOps Foundation Framework at <a href="https://finops.org" target="_blank">finops.org</a> and is used under the Creative Commons Attribution 4.0 International License (CC BY 4.0). FinOps Foundation retains all rights to the original framework content. Users are encouraged to visit <a href="https://finops.org" target="_blank">finops.org</a> and <a href="https://learn.finops.org" target="_blank">learn.finops.org</a> for the complete, authoritative, and up-to-date FinOps Framework documentation.</p>
+    <p><strong>Not Affiliated.</strong> FinOps730 LLC and Solo730 Multimedia are independent entities and are not affiliated with, sponsored by, or officially connected to the FinOps Foundation, The Linux Foundation, AWS, Microsoft Azure, or Google Cloud Platform.</p>
+    <p style="text-align:center;margin-top:10px;">© FinOps730 LLC · <a href="https://finops.org" target="_blank">finops.org</a> (CC BY 4.0)</p>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="s-flash" class="screen">
+  <div class="filter-row" id="flash-filters"></div>
+  <div class="prog-wrap">
+    <div class="prog-bg"><div class="prog-fill" id="flash-bar"></div></div>
+    <div class="prog-txt" id="flash-prog"></div>
+  </div>
+  <div class="fc-scene" onclick="flipCard()">
+    <div class="fc-inner" id="fc-inner">
+      <div class="fc-side fc-front">
+        <div class="fc-badge">Question — Tap to flip</div>
+        <div class="fc-section-tag" id="fc-section"></div>
+        <div class="fc-q" id="fc-q"></div>
+        <div class="fc-hint">👆 Tap to reveal answer</div>
+      </div>
+      <div class="fc-side fc-back">
+        <div class="fc-badge">Answer</div>
+        <div class="fc-section-tag" id="fc-section-b"></div>
+        <div class="fc-a" id="fc-a"></div>
+        <div class="fc-hint">👆 Tap to flip back</div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-nav">
+    <button class="fc-btn fc-prev" onclick="fcMove(-1)">← Previous</button>
+    <button class="fc-btn fc-next" onclick="fcMove(1)">Next →</button>
+  </div>
+  <button class="fc-shuffle" onclick="shuffleCards()">🔀 Shuffle Cards</button>
+</div>
+
+<!-- QUIZ -->
+<div id="s-quiz" class="screen">
+  <div class="quiz-top">
+    <div class="quiz-counter" id="q-counter">Question 1 of 35</div>
+    <div class="quiz-score-badge" id="q-score-badge">Score: 0</div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-bg"><div class="prog-fill" id="quiz-bar"></div></div>
+  </div>
+  <div id="quiz-active">
+    <div class="q-card">
+      <div class="q-section" id="q-section"></div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="options" id="q-opts"></div>
+    <div class="explain" id="q-explain"></div>
+    <button class="q-next-btn" id="q-next" onclick="nextQuestion()">Next Question →</button>
+  </div>
+  <div id="quiz-score" class="hidden">
+    <div class="score-screen">
+      <span class="score-emoji" id="sc-emoji"></span>
+      <div class="score-pct" id="sc-pct"></div>
+      <div class="score-fraction" id="sc-frac"></div>
+      <div class="score-msg" id="sc-msg"></div>
+      <div class="score-sub" id="sc-sub"></div>
+      <div class="score-btns">
+        <button class="score-retry" onclick="startQuiz()">🔄 Try Again</button>
+        <button class="score-study" onclick="showScreen('s-flash');updateFlashCard()">📚 Back to Flashcards</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GLOSSARY -->
+<div id="s-gloss" class="screen">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="gloss-search" type="text" placeholder="Search any FinOps term..." oninput="filterGloss()">
+  </div>
+  <div class="gloss-count" id="gloss-count"></div>
+  <div id="gloss-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bnav-btn active" onclick="showScreen('s-home')" id="nav-home"><span class="ico">🏠</span>Home</button>
+  <button class="bnav-btn" onclick="showScreen('s-flash');updateFlashCard()" id="nav-flash"><span class="ico">📚</span>Cards</button>
+  <button class="bnav-btn" onclick="showScreen('s-quiz');startQuiz()" id="nav-quiz"><span class="ico">🎯</span>Quiz</button>
+  <button class="bnav-btn" onclick="showScreen('s-gloss');renderGloss()" id="nav-gloss"><span class="ico">📖</span>Glossary</button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════════
+// FLASHCARD DATA — 70 cards
+// ═══════════════════════════════════════════════════
+const CARDS=[
+  // DEFINITION
+  {s:"Definition",q:"What is the official FinOps definition?",a:"FinOps is an operational framework and cultural practice that maximizes the business value of technology, enables timely data-driven decision making, and creates financial accountability through collaboration between engineering, finance, and business teams."},
+  {s:"Definition",q:"FinOps is only a financial process — True or False?",a:"FALSE. FinOps is both an operational framework AND a cultural practice. It involves engineering, finance, AND business teams working together — not just finance."},
+  {s:"Definition",q:"What three teams collaborate in FinOps?",a:"Engineering, Finance, and Business teams. All three must work together for FinOps to succeed."},
+  {s:"Definition",q:"What does FinOps create across an organization?",a:"Financial accountability — meaning everyone takes responsibility for the cost of the technology they use."},
+  {s:"Definition",q:"What does the word 'FinOps' stand for?",a:"Finance + DevOps = FinOps. It stresses the communication and collaboration between business and engineering teams."},
+
+  // DOMAINS
+  {s:"Domains",q:"What are the 4 FinOps Domains?",a:"1. Understand Usage & Cost\n2. Quantify Business Value\n3. Optimize Usage & Cost\n4. Manage the FinOps Practice"},
+  {s:"Domains",q:"What does 'Understand Usage & Cost' cover?",a:"Collecting and analyzing cloud spending data, setting budgets, forecasting future spend, allocating costs to the right teams, and detecting unusual spending (anomalies)."},
+  {s:"Domains",q:"What does 'Quantify Business Value' cover?",a:"Connecting cloud costs to real business results — cost per customer, cost per transaction, cost per product feature. This is called Unit Economics."},
+  {s:"Domains",q:"What does 'Optimize Usage & Cost' cover?",a:"Taking action to reduce waste — rightsizing servers, turning off idle resources, and getting lower prices through commitment-based discounts like Reserved Instances and Savings Plans."},
+  {s:"Domains",q:"What does 'Manage the FinOps Practice' cover?",a:"Building the FinOps team and culture — training people, setting policies, advocating for FinOps across the organization, and handling billing and chargebacks."},
+  {s:"Domains",q:"Which domain handles cultural change and FinOps education?",a:"Manage the FinOps Practice. This is where you build the FinOps culture and train everyone in the organization."},
+  {s:"Domains",q:"Which domain detects unusual or unexpected spending?",a:"Understand Usage & Cost — specifically the Anomaly Management capability within that domain."},
+  {s:"Domains",q:"Before starting other Optimize goals, what must you have first?",a:"Good cost allocation information. You need to know exactly what you're spending and who's spending it before you can optimize effectively."},
+
+  // PHASES
+  {s:"Phases",q:"What are the 3 FinOps Phases in order?",a:"1. Inform → 2. Optimize → 3. Operate\n\nThink: See it → Fix it → Run it on autopilot."},
+  {s:"Phases",q:"What happens in the Inform Phase?",a:"You gain visibility into what's being spent. You collect data, assign costs to teams (showback), and create reports so everyone can see the numbers."},
+  {s:"Phases",q:"What happens in the Optimize Phase?",a:"You act on what you see. Rightsize servers, eliminate waste, and use discounts like Reserved Instances to lower your cloud bill."},
+  {s:"Phases",q:"What happens in the Operate Phase?",a:"FinOps becomes part of how your organization runs every day. Processes are automated, and cost efficiency is built into everyday decisions."},
+  {s:"Phases",q:"Are the FinOps phases completed once and done?",a:"No — they are iterative. Organizations continuously cycle through Inform → Optimize → Operate as they mature and as cloud usage changes."},
+  {s:"Phases",q:"What is 'showback' and which phase does it belong to?",a:"Showback means reporting costs back to teams so they can see what they're spending — without actually charging them. This is an Inform Phase activity."},
+
+  // PRINCIPLES
+  {s:"Principles",q:"What are the 6 FinOps Principles?",a:"1. Teams need to collaborate\n2. Business value drives technology decisions\n3. Everyone takes ownership of their usage\n4. FinOps data must be timely and accurate\n5. FinOps should be enabled centrally\n6. Take advantage of the cloud's variable cost model"},
+  {s:"Principles",q:"Who is responsible for tracking and owning technology costs?",a:"EVERYONE. FinOps Principle #3 says every person who uses cloud resources is responsible for their own usage and costs — not just the finance team."},
+  {s:"Principles",q:"Why does FinOps say everyone takes ownership?",a:"Because the people closest to the technology make the daily decisions that affect cost. Engineers who build and run services need to understand and own those costs."},
+  {s:"Principles",q:"What does 'FinOps should be enabled centrally' mean?",a:"A central FinOps team sets the rules, standards, and education for the whole organization. But accountability for costs stays with each individual team — both coexist."},
+  {s:"Principles",q:"What is the 'variable cost model' principle about?",a:"The cloud charges you only for what you use. FinOps encourages you to take advantage of this by continuously adjusting usage to match actual business needs."},
+
+  // PERSONAS
+  {s:"Personas",q:"What are the 6 core FinOps Personas?",a:"1. FinOps Practitioner\n2. Finance\n3. Leadership\n4. Engineering\n5. Product\n6. Procurement"},
+  {s:"Personas",q:"What is the Finance persona's primary goal?",a:"To accurately budget, forecast, and report cloud and technology costs. Finance wants predictable, auditable numbers."},
+  {s:"Personas",q:"What is the Leadership persona's primary goal?",a:"To drive accountability, build transparency, and ensure teams are efficient and not over budget."},
+  {s:"Personas",q:"What is the Engineering persona's primary goal?",a:"To deliver fast, high-quality services. When engineers can see their costs, they use that info to build more efficiently."},
+  {s:"Personas",q:"What is the Procurement persona's primary goal?",a:"Cloud and technology platform relationship management — negotiating contracts and managing vendor relationships with cloud providers."},
+  {s:"Personas",q:"What is the Product persona's primary goal?",a:"To quickly bring new products and features to market at the right price point. Product teams care about speed and unit economics."},
+  {s:"Personas",q:"What does 'putting data in the path of a Persona' mean?",a:"Giving each team the specific cost and usage data that's relevant to them, in a format they understand. This helps each team make better decisions."},
+  {s:"Personas",q:"How does a FinOps team drive collaboration between personas?",a:"By understanding each persona's motivations and language — translating between finance, engineering, and business so everyone stays aligned."},
+  {s:"Personas",q:"Why have a Centralized FinOps team?",a:"To advocate for new practices, drive common education across the organization, set policies, and make sure everyone is practicing FinOps the same way."},
+
+  // RATE OPTIMIZATION
+  {s:"Rate Optimization",q:"What is Rate Optimization?",a:"Getting a lower price for cloud resources by making a commitment to use them for 1 or 3 years. Examples: AWS Savings Plans, Azure Reserved Instances, GCP Committed Use Discounts."},
+  {s:"Rate Optimization",q:"What is a commitment-based discount?",a:"You promise to use a certain amount of cloud resources for a set time, and in return you get a lower hourly rate — like a bulk discount or a loyalty deal."},
+  {s:"Rate Optimization",q:"What do you need BEFORE committing to a discount?",a:"A FORECAST of your future demand. Since you're locking in usage for 1-3 years, you need to know your future needs. Guessing wrong means paying for resources you don't use."},
+  {s:"Rate Optimization",q:"What are the 3 main types of commitment discounts?",a:"1. AWS Savings Plans\n2. Azure Reserved Instances (RIs)\n3. GCP Committed Use Discounts (CUDs)"},
+  {s:"Rate Optimization",q:"What does a centralized FinOps team look for when buying commitments?",a:"Consistent, stable usage patterns that won't change much over time — those are the best workloads to commit to for discounts."},
+
+  // FORECASTING & ALLOCATION
+  {s:"Forecasting & Allocation",q:"What is Forecasting in FinOps?",a:"Predicting future cloud costs using historical data and planned changes. A good forecast helps you budget accurately and decide whether to commit to discounts."},
+  {s:"Forecasting & Allocation",q:"What is Cost Allocation?",a:"Assigning cloud costs to the right teams, projects, or business units so everyone can see and own what they're spending. Done using tags and account structures."},
+  {s:"Forecasting & Allocation",q:"What is Tagging in cloud FinOps?",a:"Adding labels (tags) to cloud resources so you know who owns them and what they're for. Example: Tag=Team:Engineering. Tagging enables accurate cost allocation."},
+  {s:"Forecasting & Allocation",q:"What happens if resources are not tagged properly?",a:"Costs become unallocated — nobody knows who owns them. This makes it impossible to hold teams accountable and leads to wasted spend going undetected."},
+  {s:"Forecasting & Allocation",q:"What is a shared cost?",a:"A cost that benefits multiple teams but comes from one resource — like a shared database or network. FinOps must split and allocate shared costs fairly across teams."},
+  {s:"Forecasting & Allocation",q:"What is Budgeting in FinOps?",a:"Setting spending limits for teams, projects, or time periods. Budgets help teams stay within financial targets and alert them when they're getting close to limits."},
+
+  // USAGE OPTIMIZATION
+  {s:"Usage Optimization",q:"What is Rightsizing?",a:"Matching the size of a cloud resource (like a server) to what's actually needed. If you're using a large server but only need a small one, rightsizing saves money."},
+  {s:"Usage Optimization",q:"What are Spot Instances / Preemptible VMs?",a:"Deeply discounted cloud instances that can be interrupted by the provider. Great for non-critical, flexible workloads. AWS calls them Spot, GCP calls them Preemptible."},
+  {s:"Usage Optimization",q:"What is idle resource waste?",a:"Resources that are running but not being used — like a server left on over the weekend. Identifying and turning off idle resources is a key optimization activity."},
+  {s:"Usage Optimization",q:"What is Auto-Scaling?",a:"Automatically adjusting the number of cloud resources based on demand. Scale up when busy, scale down when quiet. This prevents both over-spending and under-performance."},
+  {s:"Usage Optimization",q:"What is the difference between Rate Optimization and Usage Optimization?",a:"Rate Optimization = getting a lower PRICE for resources (discounts, commitments).\nUsage Optimization = using FEWER resources (rightsizing, turning off idle resources).\nBoth reduce costs but in different ways."},
+
+  // KEY CONCEPTS
+  {s:"Key Concepts",q:"What is a FinOps Scope?",a:"A segment of technology spend tied to a specific business area — like a product, a cost center, or an environment. Scopes include public cloud, SaaS, AI, data centers, and licensing."},
+  {s:"Key Concepts",q:"What is the FinOps Maturity Model?",a:"Crawl → Walk → Run. Organizations start simple (Crawl), improve their practices (Walk), and eventually embed FinOps deeply into everything they do (Run)."},
+  {s:"Key Concepts",q:"What are the 5 Models of Adoption for FinOps?",a:"1. Bottom-up (engineers start it)\n2. Top-down (leadership mandates it)\n3. Specific mandate (a problem triggers it)\n4. Cloud-native (built in from the start)\n5. SaaS (adopted because of SaaS sprawl)"},
+  {s:"Key Concepts",q:"What are Cost Metrics (FOCUS Standard)?",a:"Standard ways to measure cloud costs: List Cost, Effective Cost, Billed Cost, and Contracted Cost. FOCUS = FinOps Open Cost and Usage Specification."},
+  {s:"Key Concepts",q:"What is COGS?",a:"Cost of Goods Sold — how much it costs to generate revenue. In cloud terms: the infrastructure cost directly tied to delivering your product or service to customers."},
+  {s:"Key Concepts",q:"What is MDCO?",a:"Metrics-Driven Cost Optimization — acting when a metric hits a threshold rather than waiting for a monthly or quarterly review. Data triggers action, not the calendar."},
+  {s:"Key Concepts",q:"What is the difference between Showback and Chargeback?",a:"Showback = showing teams their costs for visibility (no actual billing).\nChargeback = actually billing teams or transferring the cost to them.\nShowback usually comes first."},
+  {s:"Key Concepts",q:"What are the 3 steps to building a business case?",a:"1. Gather reports\n2. Analyze the data\n3. Document and present the findings"},
+  {s:"Key Concepts",q:"Do FinOps KPIs ever change?",a:"YES. KPIs evolve as the organization matures, cloud usage changes, and business priorities shift. FinOps is a continuous, iterative practice — nothing stays static."},
+  {s:"Key Concepts",q:"What is Unit Economics?",a:"Measuring cost per unit of business value — like cost per customer, cost per transaction, or cost per API call. Helps connect cloud spend to business outcomes."},
+  {s:"Key Concepts",q:"What is the FOCUS standard?",a:"FinOps Open Cost and Usage Specification — a common format for cloud billing data that works across AWS, Azure, and GCP, making it easier to compare and analyze costs."},
+
+  // EXAM TIPS
+  {s:"Exam Tips",q:"Phases vs Domains — what's the difference?",a:"Phases = HOW you iterate (Inform → Optimize → Operate).\nDomains = WHAT you work toward (the 4 outcome areas).\nNever confuse them — they are separate framework elements."},
+  {s:"Exam Tips",q:"Centralized TEAM vs Distributed ACCOUNTABILITY — what's the difference?",a:"These coexist. The FinOps TEAM is centralized (sets policy, educates everyone). But ACCOUNTABILITY is distributed — everyone owns their own usage. Both principles are true at the same time."},
+  {s:"Exam Tips",q:"What do you need before a commitment discount — billing data or a forecast?",a:"A FORECAST. Billing data shows the past. Commitments are about the FUTURE. You need to predict future usage before locking in a 1-3 year commitment."},
+  {s:"Exam Tips",q:"MDCO vs Optimize Phase — how are they different?",a:"The Optimize Phase is broad (all optimization activities). MDCO is a specific mechanism — acting when a metric crosses a threshold instead of waiting for a scheduled review."},
+  {s:"Exam Tips",q:"Finance persona vs Leadership persona — how are they different?",a:"Finance = accurate numbers (budgeting, forecasting, reporting).\nLeadership = outcomes (accountability, transparency, efficiency).\nSame direction, different focus level."},
+  {s:"Exam Tips",q:"When should you choose 'All of these' as an answer?",a:"When every individual option listed is a legitimate FinOps approach. Don't pick just one if all of them apply — the exam often tests whether you know multiple valid answers."},
+  {s:"Exam Tips",q:"Are anomaly definitions static?",a:"NO. Anomaly definitions must be continuously reviewed and refined as your cloud usage, baselines, and business patterns evolve. Static definitions become useless over time."},
+  {s:"Exam Tips",q:"Rate Optimization vs Usage Optimization — which is which?",a:"Rate = lower PRICE (Reserved Instances, Savings Plans).\nUsage = less CONSUMPTION (rightsizing, turning things off).\nBoth are under Optimize Usage & Cost domain."},
+];
+
+// ═══════════════════════════════════════════════════
+// QUIZ DATA — 35 questions
+// ═══════════════════════════════════════════════════
+const QUIZ=[
+  {s:"Definition",q:"Which of these best describes FinOps?",opts:["A cost-cutting tool used only by Finance teams","An operational framework and cultural practice that maximizes technology business value","A cloud billing report generated monthly","A type of cloud contract with AWS"],ans:1,exp:"FinOps is both an operational framework AND a cultural practice. It involves engineering, finance, AND business teams — not just Finance. It's about maximizing value, not just cutting costs."},
+  {s:"Definition",q:"True or False: FinOps is only concerned with reducing cloud costs.",opts:["True — FinOps is purely a cost-cutting program","False — FinOps maximizes business VALUE, which sometimes means spending more to get more","True — the whole point is to spend as little as possible","False — FinOps has nothing to do with costs at all"],ans:1,exp:"FinOps is about maximizing VALUE, not just cutting costs. Sometimes that means investing more in the right places. The goal is smart spending tied to business outcomes."},
+  {s:"Domains",q:"Which domain includes detecting and investigating unusual cloud spending?",opts:["Optimize Usage & Cost","Quantify Business Value","Understand Usage & Cost","Manage the FinOps Practice"],ans:2,exp:"Anomaly Management is a capability within the Understand Usage & Cost domain. You can't investigate unusual spending unless you first have visibility into what you're spending."},
+  {s:"Domains",q:"Cultural change and FinOps education across the organization belong to which domain?",opts:["Understand Usage & Cost","Quantify Business Value","Optimize Usage & Cost","Manage the FinOps Practice"],ans:3,exp:"Manage the FinOps Practice is where you build the FinOps culture, train people, set policies, and advocate for FinOps organization-wide."},
+  {s:"Domains",q:"Before addressing other goals in the Optimize Phase, what must be in place first?",opts:["Defined KPIs for each team","Good cost allocation information","An approved budget from Finance","A commitment-based discount plan"],ans:1,exp:"You can't optimize what you can't see. Good cost allocation data — knowing who spends what — is the foundation of all optimization decisions."},
+  {s:"Domains",q:"Unit Economics (cost per customer, cost per transaction) belongs to which domain?",opts:["Understand Usage & Cost","Quantify Business Value","Optimize Usage & Cost","Manage the FinOps Practice"],ans:1,exp:"Quantify Business Value is about connecting cloud costs to business outcomes. Unit Economics measures cost per unit of business value."},
+  {s:"Phases",q:"What is the correct order of the FinOps lifecycle phases?",opts:["Optimize → Inform → Operate","Operate → Optimize → Inform","Inform → Optimize → Operate","Inform → Operate → Optimize"],ans:2,exp:"Inform → Optimize → Operate. First you see it (Inform), then you act on it (Optimize), then you embed it into daily operations (Operate). They cycle continuously — never stop."},
+  {s:"Phases",q:"Using tags and account groups to perform showback is typically associated with which phase?",opts:["Operate","Optimize","Inform","All phases equally"],ans:2,exp:"Showback — showing teams their costs for visibility without charging them — is an Inform Phase activity. You're making spending visible before taking action."},
+  {s:"Phases",q:"Are the FinOps phases completed once, or are they ongoing?",opts:["Completed once when FinOps is first implemented","Ongoing and iterative — organizations cycle through them continuously","Completed once per year during budget season","Only done during cloud migrations"],ans:1,exp:"The phases are iterative. Organizations continuously cycle through Inform → Optimize → Operate as they mature, cloud usage evolves, and business priorities change."},
+  {s:"Principles",q:"Who should be responsible for tracking and owning technology usage and costs?",opts:["The Finance team","The FinOps team","Procurement","Everyone takes ownership for their own technology usage"],ans:3,exp:"FinOps Principle #3: Everyone takes ownership. Engineers building and running services must own their costs. Centralizing responsibility in one team defeats the purpose."},
+  {s:"Principles",q:"Which statement about the FinOps Framework is correct?",opts:["It is rigid and prescriptive — you must follow every step in order","It is flexible — organizations start where they need to and evolve at their own pace","It is only for large enterprise companies","It must be fully implemented before any benefits are seen"],ans:1,exp:"The FinOps Framework is deliberately flexible. Organizations start with their greatest pain point and grow their practice (Crawl → Walk → Run) at a pace that makes sense."},
+  {s:"Personas",q:"What is the Finance persona's primary motivation in FinOps?",opts:["Deliver faster services to customers","Drive accountability and build transparency","Accurately budget, forecast, and report cloud costs","Manage cloud vendor relationships"],ans:2,exp:"Finance wants accurate numbers — budgets, forecasts, and reports they can rely on. They need predictable, auditable cloud cost data to do their jobs."},
+  {s:"Personas",q:"What is the Leadership persona's primary motivation?",opts:["Accurately budget and forecast costs","Drive accountability, build transparency, and ensure teams are efficient and not over budget","Quickly bring products to market","Manage cloud contracts and licensing"],ans:1,exp:"Leadership cares about outcomes — are teams accountable? Are they efficient? Are they staying within budget? They set the direction but rely on other personas to execute."},
+  {s:"Personas",q:"What is the benefit of giving Engineering teams visibility into their cost and usage?",opts:["Engineering teams will use it to negotiate better cloud rates","Engineering teams will respond to cost data and use it as an efficiency metric","Engineering teams should not see cost data — it distracts them","The FinOps team will then track costs for Engineering"],ans:1,exp:"When engineers can see the cost of what they build and run, they naturally respond by making more cost-efficient decisions. Visibility creates accountability without enforcement."},
+  {s:"Personas",q:"What is the Procurement persona primarily responsible for?",opts:["Budgeting and financial reporting","Cloud and technology platform relationship management","Building and optimizing cloud infrastructure","Defining product requirements and pricing"],ans:1,exp:"Procurement manages relationships with cloud providers — negotiating contracts, managing commitments, and handling licensing agreements."},
+  {s:"Rate Optimization",q:"Purchasing an AWS Savings Plan, Azure Reserved Instance, or GCP Committed Use Discount are all examples of which FinOps capability?",opts:["Usage Optimization","Planning & Estimating","Rate Optimization","Unit Economics"],ans:2,exp:"Rate Optimization is specifically about getting lower prices for cloud resources by committing to use them. These commitment-based discounts are the primary Rate Optimization tools."},
+  {s:"Rate Optimization",q:"What information should you obtain BEFORE committing to a discount?",opts:["Billing data for each charged item","Summary invoice data","A forecast of demand for your organization","Defined KPIs for the business"],ans:2,exp:"Commitments lock you in for 1-3 years. You need to know your FUTURE demand before committing — not just what you spent in the past. A demand forecast tells you what you can safely commit to."},
+  {s:"Rate Optimization",q:"What best describes a commitment-based discount?",opts:["A lower-cost instance type you can deploy anytime","A savings coupon or lower hourly rate in exchange for a usage commitment","A standby instance used when your primary instance fails","Specialized instances with attached storage"],ans:1,exp:"Commitment-based discounts work like a loyalty deal — you promise to use a certain amount for 1-3 years, and in return you get a significantly lower hourly rate."},
+  {s:"Forecasting & Allocation",q:"An engineering team deploys resources without adding any tags. What is the most likely FinOps impact?",opts:["Costs are automatically allocated by the cloud provider","The costs become unallocated — making accountability impossible","Tagging only matters for security, not cost","The FinOps team will tag them later with no issue"],ans:1,exp:"Untagged resources lead to unallocated costs. Nobody knows who owns them, making it impossible to hold teams accountable and easy for waste to go undetected."},
+  {s:"Forecasting & Allocation",q:"What is the primary purpose of cost allocation in FinOps?",opts:["To reduce the total cloud bill","To assign costs to the right teams or business units so they can own their spending","To create invoices for external customers","To forecast next year's budget"],ans:1,exp:"Cost allocation assigns spending to the right owners — teams, products, or cost centers. Without it, nobody knows who's responsible for what, and accountability breaks down."},
+  {s:"Forecasting & Allocation",q:"A company has one shared database used by 3 teams. How should FinOps handle this cost?",opts:["Assign it all to the largest team","Leave it unallocated since it's shared","Split and allocate the cost fairly across the teams that benefit from it","Only charge it to the team that created it"],ans:2,exp:"Shared costs must be allocated fairly across the teams that benefit from them. Leaving costs unallocated prevents accountability and distorts each team's true spending picture."},
+  {s:"Usage Optimization",q:"A server is running at 10% CPU usage all month but is sized for 90%. What should FinOps recommend?",opts:["Leave it — performance headroom is important","Purchase a Reserved Instance for it","Rightsize it to a smaller instance that matches actual usage","Add it to the anomaly watchlist"],ans:2,exp:"Rightsizing means matching resource size to actual usage. A server running at 10% capacity is significantly oversized — downsizing it saves money without impacting performance."},
+  {s:"Usage Optimization",q:"What is the difference between Rate Optimization and Usage Optimization?",opts:["They are the same thing","Rate = lower price through commitments; Usage = consuming fewer resources","Rate = consuming fewer resources; Usage = lower price through commitments","Rate is for AWS only; Usage is for Azure and GCP"],ans:1,exp:"Rate Optimization gets you a lower PRICE (Reserved Instances, Savings Plans). Usage Optimization reduces CONSUMPTION (rightsizing, turning off idle resources). Both are under the Optimize domain."},
+  {s:"Usage Optimization",q:"Which type of cloud instance offers the deepest discount but can be interrupted by the cloud provider?",opts:["Reserved Instances","On-Demand instances","Spot / Preemptible instances","Dedicated hosts"],ans:2,exp:"Spot (AWS) and Preemptible (GCP) instances can be up to 90% cheaper than On-Demand but can be reclaimed by the cloud provider. They're best for flexible, non-critical workloads."},
+  {s:"Key Concepts",q:"Bottom-up, top-down, specific mandate, cloud-native, and SaaS are examples of what?",opts:["FinOps Phases","The Maturity Model","Models of Adoption for FinOps","FinOps Domains"],ans:2,exp:"These are Models of Adoption — the different ways organizations begin their FinOps journey. Some start because engineers push for it (bottom-up), others because leadership mandates it (top-down)."},
+  {s:"Key Concepts",q:"List Cost, Effective Cost, Billed Cost, and Contracted Cost are examples of what?",opts:["FinOps Phases","Cost Metrics","Showback reports","Chargeback methods"],ans:1,exp:"These are Cost Metrics defined in the FOCUS standard (FinOps Open Cost and Usage Specification). FOCUS provides a consistent way to measure cloud costs across different providers."},
+  {s:"Key Concepts",q:"What does MDCO stand for and what does it do?",opts:["Multi-Domain Cost Optimization — tracks costs across domains","Monthly Discount and Cost Overview — a billing report","Metrics-Driven Cost Optimization — moves decisions from scheduled reviews to threshold-based triggers","Managed Discount and Commitment Operations — handles RI purchasing"],ans:2,exp:"MDCO = Metrics-Driven Cost Optimization. Instead of waiting for month-end reviews, you act when a metric crosses a defined threshold. Data drives timing, not the calendar."},
+  {s:"Key Concepts",q:"Which of these is true about anomaly definitions?",opts:["They are static and should never change","Anomalies don't need to be formally defined","They should be continuously reviewed and refined","They should only be based on percentage change"],ans:2,exp:"Anomaly definitions must evolve as your cloud usage, baselines, and business patterns change. A spending spike that was unusual 6 months ago might be completely normal today as you scale."},
+  {s:"Key Concepts",q:"What is the difference between Showback and Chargeback?",opts:["They are the same thing","Showback bills teams for their usage; Chargeback only shows them","Showback shows teams their costs for visibility without billing them; Chargeback actually transfers the costs","Chargeback is for AWS; Showback is for Azure"],ans:2,exp:"Showback = visibility only, no billing. Chargeback = teams are actually billed or costs are transferred to their budget. Showback usually comes first as teams build awareness."},
+  {s:"Key Concepts",q:"Do FinOps KPIs stay the same over time?",opts:["Yes — KPIs are set once during implementation and never change","No — KPIs evolve as the organization matures and priorities shift","Yes — changing KPIs creates confusion","No — KPIs are replaced every quarter with completely new ones"],ans:1,exp:"FinOps is iterative. As your organization matures (Crawl → Walk → Run), what success looks like changes. KPIs must evolve to reflect current business priorities and cloud usage patterns."},
+  {s:"Key Concepts",q:"What is a FinOps Scope?",opts:["A Principle that guides FinOps decisions","A Persona role within the FinOps team","A segment of technology spend aligned to a business construct","One of the 4 FinOps Domains"],ans:2,exp:"A Scope is a defined segment of technology spend — like a product line, cost center, or environment. Scopes include public cloud, SaaS, AI, data centers, and licensing."},
+  {s:"Exam Tips",q:"Which of these is a valid way to encourage teams to take optimization actions?",opts:["Aligning goals across teams","Utilizing FinOps team members' influence","Building credibility through small wins","All of these"],ans:3,exp:"All three approaches work together. When all listed options are legitimate FinOps concepts, the answer is 'All of these.' Don't overthink it by picking just one valid approach."},
+  {s:"Exam Tips",q:"A centralized FinOps team exists — does that mean they own all the cloud costs?",opts:["Yes — centralized team means centralized ownership","No — the team is centralized for policy and education, but cost accountability is distributed to everyone","Yes — that's the whole point of centralizing FinOps","No — nobody owns costs; they are shared equally"],ans:1,exp:"Centralized TEAM and distributed ACCOUNTABILITY coexist. The FinOps team sets standards and educates everyone, but each team that uses cloud resources owns their own costs."},
+  {s:"Exam Tips",q:"Which domain does 'establishing a FinOps culture' fall under?",opts:["Understand Usage & Cost","Quantify Business Value","Optimize Usage & Cost","Manage the FinOps Practice"],ans:3,exp:"Cultural change and establishing a FinOps culture are activities within Manage the FinOps Practice — specifically the FinOps Education & Enablement capability."},
+  {s:"Exam Tips",q:"An organization's cloud bill increased despite stable workloads. What is the most likely FinOps cause?",opts:["The cloud provider raised prices automatically","Engineers overprovisioned resources for performance and reliability headroom","The FinOps team failed to submit a budget","Reserved Instances expired and resources reverted to On-Demand pricing"],ans:1,exp:"Overprovisioning — buying more capacity than needed — is the most common cause of unexpected cloud cost increases. Engineers often size up for safety, which wastes money. Rightsizing solves this."},
+];
+
+// ═══════════════════════════════════════════════════
+// GLOSSARY DATA — 60+ terms
+// ═══════════════════════════════════════════════════
+const GLOSSARY=[
+  {term:"Allocation",def:"The process of assigning cloud costs to specific teams, projects, products, or cost centers so each group can see and own their spending. Done through tags, account structures, and metadata.",cat:"Core Concept"},
+  {term:"Amortization",def:"Spreading the upfront cost of a Reserved Instance or Savings Plan across the commitment period so costs appear evenly distributed rather than as a one-time charge.",cat:"Finance"},
+  {term:"Anomaly Detection",def:"Identifying unexpected or unusual changes in cloud spending that could indicate waste, misconfiguration, or a security issue. Part of the Understand Usage & Cost domain.",cat:"Capability"},
+  {term:"Auto-Scaling",def:"Automatically adjusting the number of cloud resources up or down based on current demand. Prevents overspending during quiet periods and under-performance during peak times.",cat:"Optimization"},
+  {term:"Billing Data",def:"The raw cost and usage information provided by cloud providers. The foundation for all FinOps analysis, reporting, and decision-making.",cat:"Core Concept"},
+  {term:"Budget",def:"A spending limit set for a team, project, or time period. Budgets help teams stay within financial targets and trigger alerts when limits are approached.",cat:"Finance"},
+  {term:"Billed Cost",def:"The actual amount charged to your cloud account after applying all discounts, credits, and adjustments. One of the four FOCUS cost metrics.",cat:"FOCUS Metric"},
+  {term:"Chargeback",def:"A model where teams are actually billed or have costs transferred to their budget based on their cloud usage. Creates strong financial accountability.",cat:"Core Concept"},
+  {term:"Cloud Cost Management",def:"The practice of monitoring, analyzing, and optimizing cloud spending. FinOps provides the framework and culture for effective cloud cost management.",cat:"Core Concept"},
+  {term:"COGS",def:"Cost of Goods Sold — measures how many dollars it costs to generate revenue in a specific period. In cloud/tech, includes the infrastructure directly tied to delivering services to customers.",cat:"Finance"},
+  {term:"Commitment-Based Discount",def:"A lower price for cloud resources in exchange for committing to use them for 1 or 3 years. Examples include AWS Savings Plans, Azure Reserved Instances, and GCP Committed Use Discounts.",cat:"Rate Optimization"},
+  {term:"Contracted Cost",def:"The negotiated price for cloud resources based on enterprise agreements or contracts. One of the four FOCUS cost metrics — may differ from list price.",cat:"FOCUS Metric"},
+  {term:"Cost Allocation",def:"Assigning cloud costs to the right owners — teams, products, or cost centers — so everyone can see and own their spending. Requires tagging and account structures.",cat:"Core Concept"},
+  {term:"Cost of Goods Sold",def:"See COGS. The direct cost associated with producing and delivering a product or service. Includes cloud infrastructure costs tied to serving customers.",cat:"Finance"},
+  {term:"CUD",def:"Committed Use Discount — Google Cloud Platform's version of commitment-based discounts. You commit to using a certain resource for 1 or 3 years in exchange for a lower rate.",cat:"Rate Optimization"},
+  {term:"Data Ingestion",def:"The process of collecting, normalizing, and processing cost and usage data from all technology sources into a consistent format for analysis and reporting.",cat:"Capability"},
+  {term:"DevOps",def:"A set of practices combining software development (Dev) and IT operations (Ops). FinOps extends this concept by adding Finance — Finance + DevOps = FinOps.",cat:"Core Concept"},
+  {term:"Domains",def:"The four outcome areas of the FinOps Framework: Understand Usage & Cost, Quantify Business Value, Optimize Usage & Cost, and Manage the FinOps Practice.",cat:"Framework"},
+  {term:"Effective Cost",def:"The cost after applying Reserved Instance or Savings Plan discounts, spreading upfront fees over the commitment period. One of the four FOCUS cost metrics.",cat:"FOCUS Metric"},
+  {term:"Elasticity",def:"The ability to automatically scale cloud resources up or down based on demand. A key advantage of cloud computing that FinOps helps organizations take full advantage of.",cat:"Cloud Concept"},
+  {term:"FinOps",def:"Finance + DevOps. An operational framework and cultural practice that maximizes the business value of technology through collaboration between engineering, finance, and business teams.",cat:"Core Concept"},
+  {term:"FinOps Foundation",def:"A program of The Linux Foundation dedicated to advancing the discipline of cloud financial management through best practices, education, standards, and community. Home of the FOCP certification.",cat:"Organization"},
+  {term:"FinOps Practitioner",def:"A persona and role that bridges business, engineering, and finance teams. Drives accountability, builds transparency, and ensures evidence-based decisions that maximize business value.",cat:"Persona"},
+  {term:"FOCUS",def:"FinOps Open Cost and Usage Specification — a standard format and common language for cloud billing data that works across AWS, Azure, GCP, and other providers.",cat:"Standard"},
+  {term:"FOCP",def:"FinOps Certified Practitioner — the entry-level FinOps certification offered by the FinOps Foundation and administered by The Linux Foundation. Exam is 50 questions, 75% to pass.",cat:"Certification"},
+  {term:"Forecast",def:"A prediction of future cloud spending based on historical data and planned changes. Required before making commitment-based discount purchases.",cat:"Capability"},
+  {term:"Idle Resources",def:"Cloud resources that are running but not being used — like a server left on overnight or over weekends. Finding and eliminating idle resources is a key cost optimization activity.",cat:"Optimization"},
+  {term:"Inform Phase",def:"The first FinOps lifecycle phase. Focused on gaining visibility — collecting data, allocating costs, creating reports, and performing showback so teams can see what they're spending.",cat:"Framework"},
+  {term:"Iron Triangle",def:"A project management concept balancing Cost, Quality, and Speed. In FinOps, these three factors are used to make conscious trade-off decisions about cloud investments.",cat:"Core Concept"},
+  {term:"KPI",def:"Key Performance Indicator — a measurable value that shows how effectively a team or organization is achieving key objectives. FinOps KPIs evolve as the practice matures.",cat:"Core Concept"},
+  {term:"List Cost",def:"The standard, undiscounted price for a cloud resource as published by the cloud provider. The starting point before any discounts or negotiated rates are applied.",cat:"FOCUS Metric"},
+  {term:"MDCO",def:"Metrics-Driven Cost Optimization — moving decision-making from arbitrary calendar schedules (monthly/quarterly reviews) to data-driven action triggered by metrics crossing a defined threshold.",cat:"Core Concept"},
+  {term:"Maturity Model",def:"Crawl → Walk → Run. Describes the maturity level of a FinOps practice. Organizations start simple and grow in scope, scale, and sophistication over time.",cat:"Framework"},
+  {term:"Models of Adoption",def:"The ways organizations begin their FinOps journey: Bottom-up, Top-down, Specific Mandate, Cloud-native, and SaaS. Describes HOW FinOps gets introduced — not the phases.",cat:"Framework"},
+  {term:"On-Demand Pricing",def:"The standard pay-as-you-go cloud pricing model. Maximum flexibility but highest cost. Resources are billed by the hour or second with no commitment required.",cat:"Cloud Concept"},
+  {term:"Operate Phase",def:"The third FinOps lifecycle phase. FinOps becomes embedded in daily operations — processes are automated, feedback loops are established, and cost efficiency is a standard part of how work gets done.",cat:"Framework"},
+  {term:"Optimize Phase",def:"The second FinOps lifecycle phase. Acting on visibility gained in the Inform Phase — rightsizing, eliminating waste, and leveraging discounts to reduce costs.",cat:"Framework"},
+  {term:"Overprovisioning",def:"Buying more cloud resources (CPU, memory, storage) than are actually needed. The most common cause of cloud waste. Rightsizing is the solution.",cat:"Optimization"},
+  {term:"Persona",def:"A representation of a broad stakeholder group in FinOps — Finance, Leadership, Engineering, Product, Procurement, or FinOps Practitioner. Each has distinct motivations and goals.",cat:"Framework"},
+  {term:"Principles",def:"The 6 guiding beliefs of FinOps that act as a north star: Collaborate, Business Value Drives Decisions, Everyone Takes Ownership, Data Accessible & Timely, Enabled Centrally, Variable Cost Model.",cat:"Framework"},
+  {term:"Rate Optimization",def:"Getting lower prices for cloud resources by making usage commitments (Reserved Instances, Savings Plans, Committed Use Discounts). Focused on the PRICE paid, not the amount used.",cat:"Capability"},
+  {term:"Reserved Instance",def:"A commitment to use a specific cloud resource for 1 or 3 years in exchange for a discounted rate. AWS and Azure call these Reserved Instances (RIs).",cat:"Rate Optimization"},
+  {term:"Rightsizing",def:"Matching the size of a cloud resource to what's actually needed. If you're using a large server but only need a small one, rightsizing saves money without impacting performance.",cat:"Optimization"},
+  {term:"Savings Plan",def:"AWS's flexible commitment-based discount. You commit to a certain dollar amount of usage per hour for 1 or 3 years, and get a discount on any resource that qualifies.",cat:"Rate Optimization"},
+  {term:"Scope",def:"A defined segment of technology spend — aligned to a business construct like a product, cost center, or environment. Scopes include public cloud, SaaS, AI, data centers, and licensing.",cat:"Framework"},
+  {term:"Shared Cost",def:"A cost that benefits multiple teams but comes from a single resource (like a shared database or network). FinOps must split and allocate shared costs fairly across all benefiting teams.",cat:"Core Concept"},
+  {term:"Showback",def:"Reporting costs back to teams for visibility purposes without actually billing them. An Inform Phase activity that builds awareness and accountability before implementing chargeback.",cat:"Core Concept"},
+  {term:"Spot Instance",def:"AWS's deeply discounted instance type (up to 90% off On-Demand). Can be interrupted by AWS when capacity is needed. Best for flexible, fault-tolerant workloads.",cat:"Cloud Concept"},
+  {term:"Tagging",def:"Adding metadata labels to cloud resources to identify who owns them, what they're for, and how to allocate their costs. The foundation of good cost allocation.",cat:"Core Concept"},
+  {term:"TCO",def:"Total Cost of Ownership — the full cost of a technology investment including direct costs (compute, storage) and indirect costs (management, support, training).",cat:"Finance"},
+  {term:"Unit Economics",def:"Measuring cost per unit of business value — cost per customer, cost per transaction, cost per API call. Connects cloud spending directly to business outcomes.",cat:"Capability"},
+  {term:"Unallocated Cost",def:"Cloud spending that hasn't been assigned to any team, product, or cost center — usually due to missing or incomplete tags. Makes accountability impossible.",cat:"Core Concept"},
+  {term:"Usage Optimization",def:"Reducing the amount of cloud resources consumed without impacting business outcomes. Includes rightsizing, turning off idle resources, and using auto-scaling.",cat:"Capability"},
+  {term:"Variable Cost Model",def:"The cloud's pay-as-you-go pricing structure where you pay only for what you use. FinOps Principle #6 encourages organizations to take full advantage of this flexibility.",cat:"Framework"},
+  {term:"Waste",def:"Cloud resources that are running but not delivering business value — idle servers, orphaned storage, oversized instances. Identifying and eliminating waste is a core FinOps activity.",cat:"Optimization"},
+];
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let flashFiltered=[...CARDS],flashIdx=0,flashFilter='All',isFlipped=false;
+let quizList=[],quizIdx=0,quizScore=0,answered=false;
+let bestScore=localStorage.getItem('fo_best')||null;
+let glossInited=false;
+const SECTIONS=['All',...new Set(CARDS.map(c=>c.s))];
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  const map={'s-home':'nav-home','s-flash':'nav-flash','s-quiz':'nav-quiz','s-gloss':'nav-gloss'};
+  if(map[id])document.getElementById(map[id]).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════
+// FLASHCARDS
+// ═══════════════════════════════════════════════════
+function buildFilters(){
+  const wrap=document.getElementById('flash-filters');
+  wrap.innerHTML='';
+  SECTIONS.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='chip'+(s===flashFilter?' on':'');
+    b.textContent=s;
+    b.onclick=()=>{
+      flashFilter=s;
+      flashFiltered=s==='All'?[...CARDS]:CARDS.filter(c=>c.s===s);
+      flashIdx=0;buildFilters();updateFlashCard();
+    };
+    wrap.appendChild(b);
+  });
+}
+function updateFlashCard(){
+  if(!flashFiltered.length)return;
+  const card=flashFiltered[flashIdx];
+  isFlipped=false;
+  document.getElementById('fc-inner').classList.remove('flipped');
+  document.getElementById('fc-section').textContent=card.s;
+  document.getElementById('fc-section-b').textContent=card.s;
+  document.getElementById('fc-q').textContent=card.q;
+  document.getElementById('fc-a').textContent=card.a;
+  const pct=Math.round(((flashIdx+1)/flashFiltered.length)*100);
+  document.getElementById('flash-bar').style.width=pct+'%';
+  document.getElementById('flash-prog').textContent=(flashIdx+1)+' of '+flashFiltered.length;
+}
+function flipCard(){
+  isFlipped=!isFlipped;
+  document.getElementById('fc-inner').classList.toggle('flipped',isFlipped);
+}
+function fcMove(dir){
+  flashIdx=(flashIdx+dir+flashFiltered.length)%flashFiltered.length;
+  updateFlashCard();
+}
+function shuffleCards(){
+  for(let i=flashFiltered.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [flashFiltered[i],flashFiltered[j]]=[flashFiltered[j],flashFiltered[i]];
+  }
+  flashIdx=0;updateFlashCard();
+}
+
+// ═══════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════
+function startQuiz(){
+  quizList=[...QUIZ].sort(()=>Math.random()-0.5);
+  quizIdx=0;quizScore=0;answered=false;
+  document.getElementById('quiz-active').classList.remove('hidden');
+  document.getElementById('quiz-score').classList.add('hidden');
+  loadQuestion();
+}
+function loadQuestion(){
+  answered=false;
+  const q=quizList[quizIdx];
+  document.getElementById('q-counter').textContent='Question '+(quizIdx+1)+' of '+quizList.length;
+  document.getElementById('q-score-badge').textContent='Score: '+quizScore;
+  document.getElementById('quiz-bar').style.width=Math.round((quizIdx/quizList.length)*100)+'%';
+  document.getElementById('q-section').textContent=q.s;
+  document.getElementById('q-text').textContent=q.q;
+  const letters=['A','B','C','D'];
+  const opts=document.getElementById('q-opts');
+  opts.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt';
+    btn.innerHTML='<span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span>';
+    btn.onclick=()=>selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById('q-explain').classList.remove('show');
+  document.getElementById('q-explain').innerHTML='';
+  const nb=document.getElementById('q-next');
+  nb.classList.remove('show');
+  nb.textContent=quizIdx===quizList.length-1?'See Results 🎉':'Next Question →';
+}
+function selectAnswer(i){
+  if(answered)return;
+  answered=true;
+  const q=quizList[quizIdx];
+  const btns=document.querySelectorAll('.opt');
+  btns.forEach((b,idx)=>{
+    b.classList.add('disabled');
+    if(idx===i&&i===q.ans)b.classList.add('correct');
+    else if(idx===i)b.classList.add('wrong');
+    else if(idx===q.ans)b.classList.add('reveal-correct');
+  });
+  if(i===q.ans)quizScore++;
+  document.getElementById('q-score-badge').textContent='Score: '+quizScore;
+  const exp=document.getElementById('q-explain');
+  exp.innerHTML='<strong>'+(i===q.ans?'✅ Correct!':'❌ Not quite.')+'</strong> '+q.exp;
+  exp.classList.add('show');
+  document.getElementById('q-next').classList.add('show');
+}
+function nextQuestion(){
+  quizIdx++;
+  if(quizIdx>=quizList.length){showScore();return;}
+  loadQuestion();
+}
+function showScore(){
+  document.getElementById('quiz-active').classList.add('hidden');
+  document.getElementById('quiz-score').classList.remove('hidden');
+  const pct=Math.round((quizScore/quizList.length)*100);
+  if(!bestScore||pct>parseInt(bestScore)){
+    bestScore=pct;
+    localStorage.setItem('fo_best',pct);
+    document.getElementById('home-best').textContent=pct+'%';
+  }
+  document.getElementById('sc-pct').textContent=pct+'%';
+  document.getElementById('sc-frac').textContent=quizScore+' correct out of '+quizList.length;
+  document.getElementById('quiz-bar').style.width='100%';
+  let emoji,msg,sub;
+  if(pct>=90){emoji='🏆';msg='Outstanding! You\'re exam-ready.';sub='You have a strong command of the FinOps Framework. Review any missed questions and you\'re good to go.';}
+  else if(pct>=75){emoji='⭐';msg='You passed! Great job.';sub='75% is the passing score on the real exam. Keep reviewing to build your confidence margin.';}
+  else if(pct>=60){emoji='💪';msg='Getting close — keep going!';sub='Solid foundation. Focus on the sections you struggled with, review the Flashcards, then retake.';}
+  else{emoji='📚';msg='Keep studying — you\'ve got this!';sub='Work through the Flashcards section by section, check the Glossary for unfamiliar terms, then try again.';}
+  document.getElementById('sc-emoji').textContent=emoji;
+  document.getElementById('sc-msg').textContent=msg;
+  document.getElementById('sc-sub').textContent=sub;
+}
+
+// ═══════════════════════════════════════════════════
+// GLOSSARY
+// ═══════════════════════════════════════════════════
+let sortedGloss=[...GLOSSARY].sort((a,b)=>a.term.localeCompare(b.term));
+
+function renderGloss(filter=''){
+  const list=document.getElementById('gloss-list');
+  const count=document.getElementById('gloss-count');
+  list.innerHTML='';
+  const q=filter.trim().toLowerCase();
+  const filtered=q?sortedGloss.filter(g=>g.term.toLowerCase().includes(q)||g.def.toLowerCase().includes(q)||g.cat.toLowerCase().includes(q)):sortedGloss;
+  count.textContent=filtered.length+' term'+(filtered.length!==1?'s':'')+(q?' matching "'+filter+'"':'');
+  if(!filtered.length){
+    list.innerHTML='<div class="no-results">😕 No terms found for "'+filter+'"<br><br>Try a different keyword.</div>';
+    return;
+  }
+  if(q){
+    // flat list when searching
+    const wrap=document.createElement('div');
+    wrap.className='gloss-letter-group';
+    filtered.forEach(g=>{
+      wrap.appendChild(makeGlossTerm(g));
+    });
+    list.appendChild(wrap);
+  } else {
+    // grouped by first letter
+    const letters=[...new Set(filtered.map(g=>g.term[0].toUpperCase()))];
+    letters.forEach(letter=>{
+      const group=document.createElement('div');
+      group.className='gloss-letter-group';
+      const lbl=document.createElement('div');
+      lbl.className='gloss-letter';
+      lbl.textContent=letter;
+      group.appendChild(lbl);
+      filtered.filter(g=>g.term[0].toUpperCase()===letter).forEach(g=>{
+        group.appendChild(makeGlossTerm(g));
+      });
+      list.appendChild(group);
+    });
+  }
+}
+
+function makeGlossTerm(g){
+  const div=document.createElement('div');
+  div.className='gloss-term';
+  div.innerHTML='<div class="gloss-name">'+g.term+'<span class="arr">▾</span></div>'
+    +'<div class="gloss-def">'+g.def+'<br><span class="gloss-tag">'+g.cat+'</span></div>';
+  div.onclick=()=>{
+    div.classList.toggle('open');
+  };
+  return div;
+}
+
+function filterGloss(){
+  const val=document.getElementById('gloss-search').value;
+  renderGloss(val);
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+window.onload=()=>{
+  buildFilters();
+  updateFlashCard();
+  renderGloss();
+  if(bestScore)document.getElementById('home-best').textContent=bestScore+'%';
+};
+</script>
+</body>
+</html>
