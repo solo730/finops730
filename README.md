@@ -4,6 +4,7 @@
 A free, offline-first mobile study app for the **FinOps Certified Practitioner (FOCP)** exam. Built by **FinOps730 LLC** for anyone looking to learn FinOps — especially those new to cloud.
 
 No login. No internet required. Just save the file and open it in any mobile browser.
+🌐 Live App: https://solo730.github.io/finops730
 
 ---
 
